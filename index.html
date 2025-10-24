@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>@ohtcoo — Portfolio</title>
+  <meta name="description" content="@ohtcoo — Software Developer | Backend / Minecraft Client Dev" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="matrix">
+  <div id="page">
+    <header class="site-header">
+      <div class="brand">
+        <h1>@ohtcoo</h1>
+        <p class="sub">Based in Maryland • Software Developer | Backend Web & Minecraft Client Dev</p>
+      </div>
+      <nav class="nav">
+        <a href="#home">home</a>
+        <a href="#contributions">contributions</a>
+        <a href="#videos">videos</a>
+        <a href="#about">about</a>
+        <a href="#contact">contact</a>
+      </nav>
+    </header>
+
+    <main>
+      <section id="home" class="hero">
+        <div class="hero-left">
+          <h2>Contributed to 600M+ Visits.</h2>
+          <p class="lead">Software Developer • Backend Web Developer • Minecraft Client Developer</p>
+
+          <div class="quick-links">
+            <a class="btn" href="#contributions">see contributions</a>
+            <a class="btn ghost" href="#videos">watch demos</a>
+          </div>
+
+          <div class="links-panel">
+            <h3>Quick links</h3>
+            <div class="code-links" id="code-links">
+              <!-- clickable links for each project inserted by script.js -->
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-right">
+          <canvas id="ascii-canvas" aria-hidden="true"></canvas>
+          <noscript class="ascii-fallback">
+            ASCII Galaxy — enable JavaScript for animated version.
+          </noscript>
+        </div>
+      </section>
+
+      <section id="contributions" class="panel">
+        <h2>Contributions</h2>
+        <p class="muted">Click a title to open the project link (or placeholder if not set).</p>
+        <ul class="projects" id="projects-list">
+          <!-- JS will populate this -->
+        </ul>
+      </section>
+
+      <section id="videos" class="panel">
+        <h2>Featured Videos</h2>
+        <div class="videos-grid">
+          <div class="video-card">
+            <h4>Konas Client</h4>
+            <div class="video-wrap">
+              <iframe src="https://www.youtube.com/embed/FD0F51P7YoU" title="Konas" frameborder="0" allowfullscreen></iframe>
+            </div>
+          </div>
+
+          <div class="video-card">
+            <h4>Rusherhack</h4>
+            <div class="video-wrap">
+              <iframe src="https://www.youtube.com/embed/Dg1BoHX7bJo" title="Rusherhack" frameborder="0" allowfullscreen></iframe>
+            </div>
+          </div>
+
+          <div class="video-card">
+            <h4>Abyss</h4>
+            <div class="video-wrap">
+              <iframe src="https://www.youtube.com/embed/BPdKZyQE3AE" title="Abyss" frameborder="0" allowfullscreen></iframe>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" class="panel">
+        <h2>About</h2>
+        <div class="about-text">
+          <p>
+            I’m a full-stack Lua/U developer with over five years of experience, working on both popular Roblox games and smaller projects.
+            I use Fusion, Rojo, and Knit, as well as Roact, React-Lua, and Roblox-TS. I’ve built tower defense systems, combat mechanics,
+            inventory systems, and more.
+          </p>
+          <p>
+            I also have 7+ years of experience with Python, Java, JavaScript, Kotlin, CoffeeScript, TypeScript, C++, HTML, C#, Shell Script, and Rust.
+            In Minecraft modding I've used frameworks like Fabric, Forge, and Spigot and worked with bytecode (Mixins, ASM, JIT).
+            I’ve contributed to big Minecraft clients like Feather Client and Delta Client.
+          </p>
+          <p>
+            Networking libs: Netty, Kryo, Protobuf. Tooling: Groovy & Kotlin DSL, Maven, Webpack. Injection: Guice, Dagger.
+            Reactive patterns with RxJava/Project Reactor, coroutines, and more. Front/back stacks: React, Angular, Express.js, Spring Boot, REST, GraphQL, WebSockets, gRPC.
+          </p>
+        </div>
+      </section>
+
+      <section id="contact" class="panel">
+        <h2>Contact</h2>
+        <p>Interested in collaborating or want to embed more demos? Reach out via your GitHub repo README or email (add here).</p>
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <small>© <span id="year"></span> @ohtcoo — Built with ASCII ✦</small>
+    </footer>
+  </div>
+
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modal-inner">
+      <button id="modal-close" class="modal-close" aria-label="Close">✕</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <script src="script.js" type="module"></script>
+</body>
+</html>

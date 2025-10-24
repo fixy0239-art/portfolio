@@ -1,0 +1,128 @@
+:root{
+  --bg:#000;
+  --matrix:#39ff14;
+  --muted: #8fbc8f;
+  --panel-bg: rgba(0,0,0,0.6);
+  --glass: rgba(0,0,0,0.5);
+  --accent: #22ff88;
+}
+
+*{box-sizing:border-box}
+html,body,#page{height:100%}
+body{
+  margin:0;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, "Courier New", monospace;
+  background: linear-gradient(0deg,#000 0%, #021100 60%);
+  color:var(--matrix);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overflow-y: auto;
+}
+
+/* Header */
+.site-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:20px 28px;
+  border-bottom:1px solid rgba(57,255,20,0.06);
+  background: linear-gradient(180deg, rgba(0,0,0,0.35), transparent);
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+.brand h1{
+  margin:0;
+  font-size:20px;
+  letter-spacing:1px;
+  color:var(--matrix);
+}
+.brand .sub{margin:4px 0 0; color: #7ff78f; font-size:12px}
+
+/* nav */
+.nav a{
+  color:var(--matrix);
+  text-decoration:none;
+  margin-left:16px;
+  font-size:14px;
+  opacity:0.95;
+}
+.nav a:hover{opacity:1; text-decoration:underline}
+
+/* hero */
+.hero{display:flex; gap:24px; padding:36px; align-items:stretch}
+.hero-left{flex:1; max-width:720px}
+.hero-right{flex:1; position:relative; min-height:360px; display:flex; align-items:center; justify-content:center}
+
+/* canvas */
+#ascii-canvas{
+  width:100%;
+  height:420px;
+  border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.6);
+  background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.85));
+  display:block;
+}
+
+/* Quick links & code links */
+.lead{color: #9fffa8; margin-top:8px}
+.btn{
+  display:inline-block;
+  margin-right:8px;
+  margin-top:14px;
+  padding:8px 14px;
+  border-radius:8px;
+  background:rgba(57,255,20,0.06);
+  color:var(--matrix);
+  text-decoration:none;
+  border:1px solid rgba(57,255,20,0.08);
+  font-size:13px;
+}
+.btn.ghost{background:transparent; border-color:rgba(100,255,150,0.04)}
+
+/* code-links */
+.links-panel{margin-top:18px; background:var(--glass); padding:12px; border-radius:10px; border:1px solid rgba(57,255,20,0.03)}
+.code-links{display:flex; flex-wrap:wrap; gap:8px}
+.code-links a{
+  color:var(--matrix);
+  text-decoration:none;
+  padding:6px 10px;
+  border-radius:8px;
+  background:rgba(0,0,0,0.45);
+  border:1px solid rgba(57,255,20,0.03);
+}
+
+/* sections */
+.panel{padding:28px; margin:12px 18px; background:linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.35)); border-radius:12px; border:1px solid rgba(57,255,20,0.04)}
+.projects{list-style:none; padding:0; margin:8px 0 0}
+.projects li{
+  padding:12px 12px; margin-bottom:8px; border-radius:10px; display:flex; justify-content:space-between; align-items:center;
+  background:rgba(0,0,0,0.4);
+  border:1px solid rgba(57,255,20,0.03);
+}
+.projects li button, .projects li a{ color:var(--matrix); background:transparent; border:none; text-decoration:none; font-family:inherit; font-size:15px; cursor:pointer}
+.projects .meta{font-size:12px; color:#9fffb0}
+
+/* videos */
+.videos-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px}
+.video-wrap{position:relative; padding-top:56.25%; background:#000; border-radius:8px; overflow:hidden; border:1px solid rgba(57,255,20,0.03)}
+.video-wrap iframe{position:absolute; left:0; top:0; width:100%; height:100%; border:0}
+
+/* about */
+.about-text p{line-height:1.6; color:#bfffd5}
+
+/* footer */
+.site-footer{padding:18px;text-align:center; color:#88ff9a; font-size:13px; opacity:0.9}
+
+/* modal */
+.modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.6); z-index:60}
+.modal.show{display:flex}
+.modal-inner{background:#020300; border-radius:12px; padding:14px; width:min(960px,94%); max-height:92vh; overflow:auto; border:1px solid rgba(57,255,20,0.06)}
+.modal-close{float:right; background:transparent; border:none; color:var(--matrix); font-size:20px; cursor:pointer}
+
+/* small screens */
+@media (max-width:900px){
+  .hero{flex-direction:column}
+  #ascii-canvas{height:260px}
+  .site-header{flex-direction:column; align-items:flex-start; gap:10px}
+}
