@@ -88,139 +88,266 @@ function closeModal() {
 modalClose.onclick = closeModal;
 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-// ----------------------------- ASCII Galaxy animation -----------------------------
+// ----------------------------- ASCII Galaxy animation (updated) -----------------------------
+// Place your galaxy image at: /assets/galaxy.png (or change below)
+const GALAXY_PATH = "assets/galaxy.png";
+
 const canvas = document.getElementById('ascii-canvas');
 const ctx = canvas.getContext('2d', { alpha: true });
 
 let DPR = Math.max(1, window.devicePixelRatio || 1);
+
 function resize() {
   DPR = Math.max(1, window.devicePixelRatio || 1);
+  // keep canvas CSS size but update drawing buffer
   canvas.width = Math.floor(canvas.clientWidth * DPR);
   canvas.height = Math.floor(canvas.clientHeight * DPR);
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-  // set font based on size
-  ctx.font = `${Math.max(10, Math.floor(canvas.clientWidth / 40))}px "Courier New", monospace`;
+  // keep drawing coordinates in CSS pixels
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
-window.addEventListener('resize', resize);
+window.addEventListener('resize', () => {
+  resize();
+  recomputeGrid();
+});
 resize();
 
-const charSet = "%&$#@*+.:,;=<>/\\|abcdefghijklmnopqrstuvwxyz0123456789";
-function randChar(){ return charSet[Math.floor(Math.random()*charSet.length)]; }
+// ASCII charset: prioritize digits/symbols for matrix-y feel (dark->bright)
+const CHARSET = "01@#%&$9876543210*+=-:. ";
 
-class Star {
-  constructor(cx, cy, maxR) {
-    this.cx = cx; this.cy = cy; this.maxR = maxR;
-    this.reset(true);
-  }
-  reset(init=false){
-    this.angle = Math.random()*Math.PI*2;
-    this.r = init ? Math.random()*this.maxR*0.2 : 2 + Math.random()*12;
-    this.speed = 0.1 + Math.random()*0.9;
-    this.char = randChar();
-    this.size = 8 + Math.random()*18;
-    this.hue = 110 + Math.random()*60; // greenish
-    this.twist = (Math.random()-0.5)*0.02;
-  }
-  update() {
-    // rotate slowly and move outward for starfield swirl
-    this.angle += this.twist;
-    this.r += this.speed;
-    if (this.r > this.maxR) {
-      this.reset(false);
-    }
-    this.x = this.cx + this.r * Math.cos(this.angle);
-    this.y = this.cy + this.r * Math.sin(this.angle);
-  }
-  draw(ctx) {
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    // size and alpha depend on distance
-    const t = Math.min(1, this.r / Math.max(1,this.maxR));
-    ctx.globalAlpha = 0.35 + 0.65*(1 - t);
-    ctx.fillStyle = `hsl(${this.hue} 100% ${30 + 50*(1-t)}%)`;
-    ctx.shadowColor = `hsl(${this.hue} 100% 60%)`;
-    ctx.shadowBlur = 8;
-    ctx.font = `${Math.max(8, Math.floor(this.size*(1 - t*0.6)))}px monospace`;
-    ctx.fillText(this.char, 0, 0);
-    ctx.restore();
-  }
+// configuration — tweak for look/perf
+const CONFIG = {
+  targetCols: 140,              // target sampling columns across canvas
+  rotationSpeed: 0.03,          // radians per second
+  brightnessGamma: 1.0,         // >1 darkens midtones
+  sparkleChance: 0.008,         // chance per cell to be a bright star
+  cellPadding: 0.0,             // padding inside each character cell (0-0.5)
+  matrixTint: { r: 8, gMin: 50, gMax: 255, b: 10 } // tonal range for green
+};
+
+// compute sampling grid & offscreen buffer
+let cols = 80, rows = 40, cellW = 8, cellH = 14;
+let sampleCanvas = document.createElement('canvas');
+let sampleCtx = sampleCanvas.getContext('2d');
+let fontSize = 12;
+
+function recomputeGrid() {
+  // derive columns from canvas width, constrained by target
+  const cssW = canvas.clientWidth || 800;
+  const cssH = canvas.clientHeight || 420;
+  cols = Math.max(40, Math.min(CONFIG.targetCols, Math.floor(cssW / 6)));
+  // keep character aspect ratio roughly monospace-ish
+  cellW = cssW / cols;
+  // pick cell height to match monospace characters visually
+  fontSize = Math.max(8, Math.floor(cellW * 1.2)); // px
+  cellH = Math.max(10, Math.floor(fontSize * 1.15));
+  rows = Math.max(12, Math.floor(cssH / cellH));
+
+  // set offscreen sample canvas to cols x rows (1:1 sampling grid)
+  sampleCanvas.width = cols;
+  sampleCanvas.height = rows;
+  sampleCtx.imageSmoothingEnabled = true;
+  sampleCtx.imageSmoothingQuality = "high";
+
+  // set main canvas font for drawing characters (CSS pixels)
+  ctx.font = `${fontSize}px "Courier New", monospace`;
+  ctx.textBaseline = "middle";
+}
+recomputeGrid();
+
+// load galaxy image
+const galaxyImg = new Image();
+galaxyImg.src = GALAXY_PATH;
+galaxyImg.crossOrigin = "anonymous"; // helpful if hosted elsewhere
+
+// handle prefers-reduced-motion
+const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+let reducedMotion = prefersReduce.matches;
+prefersReduce.addEventListener && prefersReduce.addEventListener('change', (e) => {
+  reducedMotion = e.matches;
+});
+
+function sampleBrightnessAt(imgData, sx, sy) {
+  // sx, sy are integer pixel positions in sampleCanvas size
+  const idx = (sy * imgData.width + sx) * 4;
+  const r = imgData.data[idx];
+  const g = imgData.data[idx + 1];
+  const b = imgData.data[idx + 2];
+  // luminance
+  let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  // gamma correction / tweak
+  lum = 255 * Math.pow(lum / 255, CONFIG.brightnessGamma);
+  return lum;
 }
 
-let stars = [];
-function initStars() {
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
-  const area = w * h;
-  const target = Math.max(60, Math.min(900, Math.floor(area / 2500))); // density tuned for perf
-  const cx = w/2, cy = h/2;
-  const maxR = Math.max(w,h) * 0.7;
-
-  stars = [];
-  for (let i=0;i<target;i++){
-    stars.push(new Star(cx, cy, maxR));
-  }
+function pickCharForBrightness(bright) {
+  const t = Math.max(0, Math.min(1, bright / 255));
+  const idx = Math.floor(t * (CHARSET.length - 1));
+  return CHARSET[idx];
 }
-initStars();
-window.addEventListener('resize', initStars);
+
+let lastTs = performance.now();
+let angle = 0;
 
 // animation loop
-let last = performance.now();
-function tick(now){
-  const dt = now - last;
-  last = now;
-  // fade background for trailing effect
-  ctx.fillStyle = "rgba(0,0,0,0.22)";
-  ctx.fillRect(0,0,canvas.clientWidth, canvas.clientHeight);
+function tick(ts) {
+  const dt = (ts - lastTs) / 1000;
+  lastTs = ts;
 
-  // subtle grid/overlay for matrix vibe
+  // optional: slow everything if reduced motion requested
+  const speedMult = reducedMotion ? 0.04 : 1;
+
+  if (!reducedMotion) {
+    // advance rotation
+    angle = (angle + CONFIG.rotationSpeed * dt * speedMult) % (Math.PI * 2);
+  }
+
+  // fade background by drawing semi-transparent rectangle (gives trails)
+  ctx.fillStyle = "rgba(0,0,0,0.16)";
+  ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+
+  // small grid overlay for Matrix vibe (low alpha)
   ctx.save();
-  ctx.globalAlpha = 0.06;
+  ctx.globalAlpha = 0.04;
   ctx.fillStyle = '#002200';
-  const step = 18;
-  for (let x=0;x<canvas.clientWidth;x+=step){
+  const gridStep = Math.max(8, Math.floor(cellW));
+  for (let x = 0; x < canvas.clientWidth; x += gridStep) {
     ctx.fillRect(x, 0, 1, canvas.clientHeight);
   }
   ctx.restore();
 
-  for (let s of stars) {
-    s.update(dt);
-    s.draw(ctx);
+  // if image not ready yet, draw subtle placeholder
+  if (!galaxyImg.complete || galaxyImg.naturalWidth === 0) {
+    drawPlaceholder();
+    requestAnimationFrame(tick);
+    return;
   }
 
-  // occasionally spawn a bright comet
-  if (Math.random() < 0.01) {
-    const i = Math.floor(Math.random()*stars.length);
-    stars[i].char = ['*','@','$','%'][Math.floor(Math.random()*4)];
-    stars[i].speed *= 2.2;
-    stars[i].size *= 1.6;
+  // draw rotated & scaled galaxy into the small sample canvas
+  sampleCtx.clearRect(0, 0, sampleCanvas.width, sampleCanvas.height);
+  // center and rotate
+  sampleCtx.save();
+  sampleCtx.translate(sampleCanvas.width / 2, sampleCanvas.height / 2);
+  sampleCtx.rotate(angle);
+  // scale image to cover sample canvas
+  const scale = Math.max(sampleCanvas.width / galaxyImg.width, sampleCanvas.height / galaxyImg.height) * 1.05;
+  sampleCtx.drawImage(galaxyImg, -galaxyImg.width / 2 * scale, -galaxyImg.height / 2 * scale, galaxyImg.width * scale, galaxyImg.height * scale);
+  sampleCtx.restore();
+
+  // sample pixels and draw ASCII characters to main canvas
+  const imgData = sampleCtx.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height);
+
+  // compute where to start drawing so ascii block is centered in canvas
+  const totalWidth = cols * cellW;
+  const totalHeight = rows * cellH;
+  const startX = (canvas.clientWidth - totalWidth) / 2;
+  const startY = (canvas.clientHeight - totalHeight) / 2;
+
+  // draw each sampled cell
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const bright = sampleBrightnessAt(imgData, x, y);
+      // occasionally add a bright sparkle
+      const isSpark = (!reducedMotion && bright > 200 && Math.random() < CONFIG.sparkleChance);
+      const ch = isSpark ? (Math.random() < 0.5 ? '*' : '.') : pickCharForBrightness(bright);
+
+      // map brightness to green value for matrix look
+      const gVal = Math.floor(CONFIG.matrixTint.gMin + (bright / 255) * (CONFIG.matrixTint.gMax - CONFIG.matrixTint.gMin));
+      const rVal = Math.floor(CONFIG.matrixTint.r * (1 - bright / 255));
+      const bVal = Math.floor(CONFIG.matrixTint.b * (1 - bright / 255));
+      // alpha based on brightness (so dark areas are more transparent)
+      const alpha = 0.28 + 0.72 * (bright / 255);
+
+      // set style
+      if (isSpark) {
+        ctx.fillStyle = `rgba(255,255,255,${Math.min(1, 0.9 + Math.random()*0.1)})`;
+      } else {
+        ctx.fillStyle = `rgba(${rVal}, ${gVal}, ${bVal}, ${alpha})`;
+      }
+
+      // jitter for a little life
+      const jitterX = (Math.random() - 0.5) * 0.6;
+      const jitterY = (Math.random() - 0.5) * 0.6;
+
+      // compute draw position (centered vertically in cell)
+      const dx = startX + x * cellW + cellW * (0.5 - CONFIG.cellPadding) + jitterX;
+      const dy = startY + y * cellH + cellH * 0.5 + jitterY;
+
+      // optionally draw larger for bright spots
+      const scaleFactor = 1 + (bright / 255) * 0.35;
+      ctx.save();
+      ctx.translate(dx, dy);
+      ctx.scale(scaleFactor, scaleFactor);
+      ctx.fillText(ch, 0, 0);
+      ctx.restore();
+    }
+  }
+
+  // occasional comet: draw a brighter streak that rotates differently
+  if (!reducedMotion && Math.random() < 0.006) {
+    drawComet(angle + (Math.random() - 0.5));
   }
 
   requestAnimationFrame(tick);
 }
-requestAnimationFrame(tick);
 
-// fallback for users who prefer reduced motion
-const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-if (prefersReduce.matches) {
-  // stop animation, draw a subtle static pattern
-  function drawStatic(){
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0,0,canvas.clientWidth, canvas.clientHeight);
-    ctx.fillStyle = "#003300";
-    ctx.font = "12px monospace";
-    const cols = Math.floor(canvas.clientWidth/9);
-    const rows = Math.floor(canvas.clientHeight/14);
-    for (let r=0;r<rows;r++){
-      for (let c=0;c<cols;c++){
-        if (Math.random()>0.96) ctx.fillText(randChar(), c*9 + 4, r*14 + 10);
-      }
-    }
+function drawComet(baseAngle) {
+  const len = Math.floor(Math.min(rows, cols) * (0.06 + Math.random() * 0.12));
+  const midX = canvas.clientWidth / 2;
+  const midY = canvas.clientHeight / 2;
+  const radius = Math.max(canvas.clientWidth, canvas.clientHeight) * (0.22 + Math.random() * 0.4);
+  const startX = midX + Math.cos(baseAngle) * radius;
+  const startY = midY + Math.sin(baseAngle) * radius;
+  ctx.save();
+  ctx.strokeStyle = "rgba(180,255,200,0.9)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  for (let i = 1; i <= len; i++) {
+    const t = i / len;
+    ctx.lineTo(startX + Math.cos(baseAngle + t * 0.6) * (radius * (t * 0.15)), startY + Math.sin(baseAngle + t * 0.6) * (radius * (t * 0.15)));
   }
-  drawStatic();
-  // kill the rAF loop by overriding tick with no-op (optional)
+  ctx.stroke();
+  ctx.restore();
 }
 
-// Accessibility improvements: keyboard close for modal
+function drawPlaceholder() {
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+  ctx.fillStyle = "#003300";
+  ctx.font = "14px monospace";
+  ctx.fillText("Loading ASCII Galaxy...", 16, 28);
+}
+
+// init loop once image loads
+galaxyImg.onload = () => {
+  recomputeGrid();
+  lastTs = performance.now();
+  requestAnimationFrame(tick);
+};
+
+// initial draw until image loads
+drawPlaceholder();
+
+// fallback static pattern for reduced-motion users
+if (reducedMotion) {
+  // draw single non-animated ASCII rendering
+  galaxyImg.onload = () => {
+    // draw a single frame without rotation
+    angle = 0;
+    // force a single tick render
+    lastTs = performance.now();
+    tick(lastTs);
+  };
+}
+
+// Accessibility: Esc closes modal
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeModal();
 });
+
+// Expose some knobs for debugging from console (optional)
+window.__asciiGalaxy = {
+  config: CONFIG,
+  recomputeGrid,
+  redrawNow: () => { lastTs = performance.now(); tick(lastTs); }
+};
