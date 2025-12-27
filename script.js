@@ -195,7 +195,7 @@ function initStars() {
 initStars();
 window.addEventListener('resize', initStars);
 
-// animation loop
+// animation loop (will start only after user entry)
 let last = performance.now();
 function tick(now){
   const dt = now - last;
@@ -229,7 +229,6 @@ function tick(now){
 
   requestAnimationFrame(tick);
 }
-requestAnimationFrame(tick);
 
 // fallback for users who prefer reduced motion
 const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -249,8 +248,45 @@ if (prefersReduce.matches) {
     }
   }
   drawStatic();
-  // kill the rAF loop by overriding tick with no-op (optional)
+  // don't start the rAF loop if user prefers reduced motion
 }
+
+// ------------------ click-to-enter gate & audio ------------------
+const overlay = document.getElementById('enter-overlay');
+const music = document.getElementById('bg-music');
+let started = false;
+
+function enterSite() {
+  if (started) return;
+  started = true;
+
+  // hide overlay and make page accessible
+  overlay.classList.add('hidden');
+  document.getElementById('page').removeAttribute('aria-hidden');
+
+  // attempt to play music (must be triggered by click or keyboard event)
+  if (music) {
+    music.volume = 0.6;
+    music.play().catch((err) => {
+      // ignore — browsers may block if not allowed; user can hit play from controls if you expose them later
+      console.warn('Music playback failed:', err);
+    });
+  }
+
+  // start animation unless user prefers reduced motion
+  if (!prefersReduce.matches) {
+    requestAnimationFrame(tick);
+  }
+}
+
+// click and keyboard (Enter/Space) support for accessibility
+overlay.addEventListener('click', enterSite);
+overlay.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    enterSite();
+  }
+});
 
 // Accessibility improvements: keyboard close for modal
 document.addEventListener('keydown', (e) => {
