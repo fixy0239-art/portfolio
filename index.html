@@ -8,7 +8,19 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="matrix">
-  <div id="page">
+
+  <!-- ===== Click-to-enter overlay (user must click) ===== -->
+  <div id="enter-overlay" role="button" aria-label="Click to enter" tabindex="0">
+    <div class="enter-inner">
+      <h1>@ohtcoo</h1>
+      <p class="enter-sub">click to enter</p>
+    </div>
+  </div>
+
+  <!-- Put a copy of your music file in the repo (see instructions). Use relative path. -->
+  <audio id="bg-music" src="music.mp3" preload="auto" loop></audio>
+
+  <div id="page" aria-hidden="true">
     <header class="site-header">
       <div class="brand">
         <h1>@ohtcoo</h1>
